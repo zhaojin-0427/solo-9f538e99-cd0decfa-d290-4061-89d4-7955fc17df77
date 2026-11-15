@@ -5,6 +5,13 @@ services:
     container_name: carbon-ledger-standardizer
     ports:
       - "8000:8000"
+    environment:
+      - RESULTS_DIR=/srv/var/results
+    volumes:
+      # Result CSVs live on a real volume, not in memory and not on tmpfs
+      # (tmpfs pages count against the container memory limit).
+      - results:/srv/var/results
+    mem_limit: 384m
     restart: unless-stopped
     init: true
     read_only: true
@@ -14,3 +21,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+
+volumes:
+  results:

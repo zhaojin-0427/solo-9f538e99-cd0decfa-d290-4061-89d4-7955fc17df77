@@ -12,7 +12,8 @@ docker compose up --build -d
 打开浏览器访问 <http://localhost:8000>（健康检查：`/healthz`）。
 停止：`docker compose down`。
 
-容器以非 root 用户运行，根文件系统只读，仅开放 8000 端口。
+容器以非 root 用户运行，根文件系统只读，仅开放 8000 端口；内存限制 384 MiB。
+校验结果写入命名卷 `results`（挂载于 `/srv/var/results`），不占用容器内存。
 
 ## 本地开发（不使用 Docker）
 
@@ -72,14 +73,17 @@ python3 -m pytest -q
 ## 上传限制
 
 * 单文件 ≤ 10 MiB；台账须为 UTF-8（可带 BOM）。
-* 结果保存在服务器内存中，下载链接 30 分钟有效；重启即失效。
+* 结果文件保存在服务器的结果目录（`RESULTS_DIR`，默认为 `var/results`，Compose 中为命名卷），
+  内存中只保留令牌元数据；下载按块流式读取，进程内存不随结果总量增长。
+  下载链接 30 分钟有效；重启即失效（启动时清空结果目录）。
+* 已开始下载的文件即使中途到期也会完整传完；到期后的新请求一律返回 404。
 * 输出的标准列 CSV 为 UTF-8 带 BOM（便于 Excel 正确识别中文表头）。
 
 ## 项目结构
 
 ```
 app/
-  main.py       FastAPI 路由、上传处理、内存下载存储
+  main.py       FastAPI 路由、上传处理、磁盘结果存储（内存仅存元数据）
   spec.py       字段合同解析与规范化
   engine.py     映射枚举、歧义检测、逐行类型校验、结果生成
   templates/    浏览器页面

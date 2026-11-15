@@ -18,6 +18,13 @@
   </div>
   {% endif %}
 
+  {% if save_error %}
+  <div class="banner error" role="alert">
+    <strong>结果保存失败</strong>
+    <p>{{ save_error }}</p>
+  </div>
+  {% endif %}
+
   {% if analysis %}
     {% if analysis.valid %}
     <div class="banner success" role="status">

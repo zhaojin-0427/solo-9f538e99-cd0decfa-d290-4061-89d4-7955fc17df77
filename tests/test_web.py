@@ -168,3 +168,35 @@ def test_multiline_quoted_cell_reports_physical_line(client):
     response = upload(client, csv_text)
     assert response.status_code == 422
     assert "<td>4</td>" in response.text
+
+
+def test_many_consecutive_uploads_keep_every_link_downloadable(client):
+    # Month-end batch: 45 ledgers in a row must each yield a link that still
+    # serves its own complete file afterwards.
+    tokens = []
+    for i in range(45):
+        csv_text = f"site,period,kwh,次数\n华东{i}厂,2025-01,{i}.5,{i}\n"
+        response = upload(client, csv_text)
+        assert response.status_code == 200
+        token = response.text.split('href="/download/', 1)[1].split('"', 1)[0]
+        tokens.append(token)
+    assert len(set(tokens)) == 45
+    for i, token in enumerate(tokens):
+        download = client.get(f"/download/{token}")
+        assert download.status_code == 200
+        lines = download.content.decode("utf-8-sig").splitlines()
+        assert lines[0] == "厂区,月份,用电量(kWh),抄表次数"
+        assert lines[1] == f"华东{i}厂,2025-01,{i}.5,{i}"
+
+
+def test_save_failure_offers_no_download_link(client, monkeypatch):
+    from app import main
+
+    def failing_put(filename, payload):
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(main.store, "put", failing_put)
+    response = upload(client, GOOD_CSV)
+    assert response.status_code == 500
+    assert "保存失败" in response.text
+    assert "/download/" not in response.text

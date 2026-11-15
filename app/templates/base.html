@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}碳核算台账标准化{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">碳核算台账标准化</a>
+    <span class="tagline">字段合同驱动的能源台账对齐</span>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    所有校验均在服务器内存中完成；只有完全合格时才会生成标准列 CSV。
+  </footer>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "fields": [
+    {"name": "厂区", "aliases": ["工厂", "site", "厂站"], "type": "text", "required": true},
+    {"name": "月份", "aliases": ["统计月份", "period", "年月"], "type": "month", "required": true},
+    {"name": "用电量(kWh)", "aliases": ["电量", "kwh", "electricity_kwh"], "type": "decimal", "required": true},
+    {"name": "抄表次数", "aliases": ["次数", "meter_reads"], "type": "integer", "required": false},
+    {"name": "备注", "aliases": ["说明", "note"], "type": "text", "required": false}
+  ]
+}

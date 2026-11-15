@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel">
+  <h1>对齐字段并校验台账</h1>
+  <p class="lede">
+    上传字段合同 JSON 与厂区能源台账 CSV。系统只按合同中声明的别名建立映射，
+    绝不依据列顺序或样例值猜测字段。
+  </p>
+  <form action="/standardize" method="post" enctype="multipart/form-data" class="upload-form">
+    <div class="field">
+      <label for="contract">字段合同（JSON）</label>
+      <input id="contract" name="contract" type="file" accept=".json,application/json" required>
+      <p class="hint">
+        标准列、别名、类型与必填性。类型：text / integer / decimal / month。
+      </p>
+    </div>
+    <div class="field">
+      <label for="ledger">能源台账（CSV，UTF-8）</label>
+      <input id="ledger" name="ledger" type="file" accept=".csv,text/csv" required>
+      <p class="hint">首行为表头；未命中任何别名的额外列将被忽略。</p>
+    </div>
+    <button type="submit">开始校验</button>
+  </form>
+</section>
+
+<section class="panel help">
+  <h2>字段合同示例</h2>
+<pre>{
+  "fields": [
+    {"name": "厂区",        "aliases": ["工厂", "site"],        "type": "text",    "required": true},
+    {"name": "月份",        "aliases": ["统计月份", "period"],  "type": "month",   "required": true},
+    {"name": "用电量(kWh)", "aliases": ["电量", "kwh"],         "type": "decimal", "required": true},
+    {"name": "抄表次数",    "aliases": ["次数"],                "type": "integer", "required": false}
+  ]
+}</pre>
+  <h2>校验规则</h2>
+  <ul>
+    <li>每个命中别名的源列必须且只能对应一个标准列；必填标准列必须有来源。</li>
+    <li>存在多种完整映射时判为歧义并全部列出，不做任何优先级选择。</li>
+    <li>重复表头、必填单元格为空、任一数据行类型不符：整体拒绝，不产出部分结果。</li>
+    <li>未命中别名的额外列可忽略，不会进入结果。</li>
+  </ul>
+</section>
+{% endblock %}

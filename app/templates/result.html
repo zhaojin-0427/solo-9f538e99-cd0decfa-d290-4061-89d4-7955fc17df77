@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}校验结果 · 碳核算台账标准化{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="result-head">
+    <h1>校验结果</h1>
+    <a class="secondary" href="/">重新上传</a>
+  </div>
+  <p class="files">
+    字段合同：<code>{{ contract_name }}</code> ·
+    台账：<code>{{ ledger_name }}</code>
+  </p>
+
+  {% if upload_errors %}
+  <div class="banner error" role="alert">
+    <strong>无法处理上传文件</strong>
+    <ul>{% for message in upload_errors %}<li>{{ message }}</li>{% endfor %}</ul>
+  </div>
+  {% endif %}
+
+  {% if analysis %}
+    {% if analysis.valid %}
+    <div class="banner success" role="status">
+      <strong>校验通过</strong>
+      <p>共 {{ analysis.row_count }} 行数据，全部符合字段合同。</p>
+    </div>
+    {% else %}
+    <div class="banner error" role="alert">
+      <strong>校验未通过 —— 未生成任何结果文件</strong>
+      <p>
+        共发现 {{ analysis.error_count }} 个问题。请修正台账或字段合同后重新上传。
+      </p>
+    </div>
+    {% endif %}
+
+    {% if analysis.header_issues %}
+    <h2>表头问题</h2>
+    <ul class="error-list">
+      {% for message in analysis.header_issues %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if analysis.ambiguities %}
+    <h2>映射歧义（未做选择）</h2>
+    <div class="banner warning">
+      <ul>{% for message in analysis.ambiguities %}<li>{{ message }}</li>{% endfor %}</ul>
+    </div>
+    {% if analysis.alternatives %}
+    <h3>候选完整映射（{{ analysis.alternatives|length }} 种）</h3>
+    <div class="table-scroll">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>方案</th>
+            {% for field_spec in contract.fields %}<th>{{ field_spec.name }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for mapping in analysis.alternatives %}
+          <tr>
+            <td>#{{ loop.index }}</td>
+            {% for field_spec in contract.fields %}
+              {% set assignment = mapping|selectattr('field.name', 'equalto', field_spec.name)|list|first %}
+              <td>
+                {% if assignment %}<code>{{ assignment.source_header }}</code>
+                {% else %}<span class="muted">—</span>{% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    {% if analysis.mapping_errors %}
+    <h2>映射问题</h2>
+    <ul class="error-list">
+      {% for message in analysis.mapping_errors %}<li>{{ message }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if analysis.missing_fields %}
+    <h2>缺失的必填列</h2>
+    <ul class="error-list">
+      {% for field_spec in analysis.missing_fields %}
+      <li>必填标准列 <code>{{ field_spec.name }}</code> 没有任何来源列</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if analysis.row_errors %}
+    <h2>错误行（{{ analysis.row_errors|length }} 处）</h2>
+    <div class="table-scroll">
+      <table class="grid">
+        <thead>
+          <tr><th>行号</th><th>源列</th><th>标准列</th><th>值</th><th>问题</th></tr>
+        </thead>
+        <tbody>
+          {% for error in analysis.row_errors %}
+          <tr>
+            <td>{{ error.row }}</td>
+            <td>{{ error.column }}</td>
+            <td><code>{{ error.field }}</code></td>
+            <td>
+              {% if error.value %}<code>{{ error.value }}</code>
+              {% else %}<span class="muted">（空）</span>{% endif %}
+            </td>
+            <td>{{ error.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if analysis.mapping %}
+    <h2>字段映射</h2>
+    <div class="table-scroll">
+      <table class="grid">
+        <thead>
+          <tr><th>标准列</th><th>类型</th><th>必填</th><th>来源列</th></tr>
+        </thead>
+        <tbody>
+          {% for assignment in analysis.mapping %}
+          <tr>
+            <td>{{ assignment.field.name }}</td>
+            <td>{{ assignment.field.type }}</td>
+            <td>{{ "是" if assignment.field.required else "否" }}</td>
+            <td><code>{{ assignment.source_header }}</code></td>
+          </tr>
+          {% endfor %}
+          {% for field_spec in analysis.unmapped_optional %}
+          <tr class="muted">
+            <td>{{ field_spec.name }}</td>
+            <td>{{ field_spec.type }}</td>
+            <td>否</td>
+            <td>（无来源，输出为空值）</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
+    {% if analysis.ignored_columns %}
+    <h2>已忽略的额外列</h2>
+    <p class="muted">{{ analysis.ignored_columns|join("、") }}</p>
+    {% endif %}
+
+    {% if download_url %}
+    <div class="download">
+      <a class="button" href="{{ download_url }}" download>下载标准列 CSV</a>
+      <span class="muted">链接 30 分钟内有效。</span>
+    </div>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}
